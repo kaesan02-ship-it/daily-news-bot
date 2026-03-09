@@ -18,31 +18,42 @@ def _get_model():
     return genai.GenerativeModel(model_name)
 
 
-SYSTEM_PROMPT = """당신은 뉴스 콘텐츠 기획 전문가입니다.
-제공된 뉴스 기사를 읽고 다음 형식으로 정확하게 응답하세요.
+SYSTEM_PROMPT = """당신은 신입사원 면접 과제용 시사 뉴스 큐레이터입니다.
+제공된 뉴스 기사를 분석하여 아래 형식으로 정확하게 응답하세요.
 
-[주제안]: 해당 뉴스의 핵심을 담은 한 줄 제목 (15~30자, 예: "국내 AI 반도체 규제 강화 동향")
-[핵심요약]: 3~5줄 핵심 내용 요약. 각 줄은 "• "으로 시작
-[키워드]: 핵심 키워드 3~5개를 쉼표로 구분 (예: AI, 반도체, 수출규제)
-[중요도]: 상/중/하 중 하나만 선택
+중요 규칙:
+1. 모든 출력은 반드시 한국어로 작성하세요. (영어 기사도 한국어로 번역·요약)
+2. 정치적 내용(선거, 여야 갈등, 정당 관련)이 주제인 기사는 [SKIP]이라고만 응답하세요.
+3. 핵심요약은 반드시 완전한 문장으로 작성하고, 문장이 중간에 끊기지 않게 하세요.
+4. 면접 과제 주제로 활용 가능한 시각으로 기사를 해석하세요.
 
-절대 다른 내용이나 형식을 추가하지 마세요."""
+[주제안]: 뉴스의 핵심을 담은 한 줄 제목 (20~35자, 예: "글로벌 공급망 재편이 국내 제조업에 미치는 영향")
+[핵심요약]:
+• (첫 번째 핵심 사실 — 완전한 문장)
+• (두 번째 핵심 사실 — 완전한 문장)
+• (세 번째 핵심 사실 또는 시사점 — 완전한 문장)
+[키워드]: 키워드1, 키워드2, 키워드3 (최대 4개)
+[중요도]: 상/중/하 중 하나"""
 
 
 def summarize_article(article: dict, model) -> dict:
     """단일 기사를 요약합니다."""
-    prompt = f"""제목: {article['title']}
-카테고리: {article['category']}
-내용 미리 보기: {article['summary']}
+    prompt = f"""{SYSTEM_PROMPT}
 
-위 뉴스를 분석하여 정해진 형식으로 응답하세요."""
+---
+기사 제목: {article['title']}
+카테고리: {article['category']}
+기사 내용: {article['summary']}
+---
+
+위 기사를 분석하여 정해진 형식으로 응답하세요."""
 
     try:
         response = model.generate_content(
             prompt,
             generation_config={
-                "max_output_tokens": 500,
-                "temperature": 0.3,
+                "max_output_tokens": 800,
+                "temperature": 0.2,
             },
         )
         text = response.text.strip()
